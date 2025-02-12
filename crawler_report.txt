@@ -1,0 +1,60 @@
+Total Unique Pages: 11
+Longest Page: https://ics.uci.edu/events/category/graduate-admissions with 1099 words
+
+Top 50 Most Common Words:
+computer: 82
+research: 73
+ics: 73
+information: 72
+career: 70
+science: 66
+irvine: 53
+learning: 50
+master: 49
+program: 48
+graduate: 48
+uc: 44
+student: 44
+admissions: 41
+software: 41
+can: 40
+undergraduate: 38
+us: 37
+session: 37
+donald: 35
+bren: 35
+s: 34
+00: 33
+get: 31
+events: 31
+data: 30
+students: 29
+alumni: 29
+community: 29
+online: 29
+school: 29
+machine: 29
+discover: 28
+engineering: 28
+t: 27
+programs: 27
+explore: 26
+12: 26
+time: 25
+uci: 24
+curriculum: 24
+learn: 24
+professional: 24
+sciences: 23
+goals: 23
+future: 23
+statistics: 23
+process: 22
+informatics: 21
+help: 21
+
+Subdomains in ics.uci.edu:
+code.ics.uci.edu, 1
+ics.uci.edu, 8
+mcs.ics.uci.edu, 1
+mhcid.ics.uci.edu, 1

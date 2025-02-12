@@ -1,5 +1,4 @@
 from threading import Thread
-
 from inspect import getsource
 from utils.download import download
 from utils import get_logger
@@ -12,6 +11,8 @@ class Worker(Thread):
         self.logger = get_logger(f"Worker-{worker_id}", "Worker")
         self.config = config
         self.frontier = frontier
+        self.start_time = time.time()
+        self.TIME_LIMIT = 20
         # basic check for requests in scraper
         assert {getsource(scraper).find(req) for req in {"from requests import", "import requests"}} == {-1}, "Do not use requests in scraper.py"
         assert {getsource(scraper).find(req) for req in {"from urllib.request import", "import urllib.request"}} == {-1}, "Do not use urllib.request in scraper.py"
@@ -19,6 +20,10 @@ class Worker(Thread):
         
     def run(self):
         while True:
+            if time.time() - self.start_time > self.TIME_LIMIT:
+                print("Worker time limit reached. Stopping crawler.")
+                scraper.get_report()
+                break
             tbd_url = self.frontier.get_tbd_url()
             if not tbd_url:
                 self.logger.info("Frontier is empty. Stopping Crawler.")
