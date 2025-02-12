@@ -20,17 +20,6 @@ a about above after again against all am an and any are aren't as at be because 
 # Set time limit for execution
 start_time = time.time()
 TIME_LIMIT = 20  # Stop after 20 seconds
-TRAP_PATTERNS = [
-    r'\?sort=', r'\?order=', r'\?page=', r'\?date=', r'\?filter=', r'calendar', r'\?view=',
-    r'\?session=', r'\?print=', r'\?lang=', r'\?mode=', r'\?year=', r'\?month=', r'\?day='
-]
-
-def is_trap(url):
-    """Detects common crawler traps based on URL patterns."""
-    for pattern in TRAP_PATTERNS:
-        if re.search(pattern, url):
-            return True
-    return False
 
 def can_fetch(url):
     """Checks if the URL is allowed by robots.txt"""
@@ -61,10 +50,6 @@ def scraper(url, resp):
         return []
 
     if resp.status != 200 or resp.raw_response is None:
-        return []
-
-    if is_trap(url):
-        print(f"Skipping potential crawler trap: {url}")
         return []
 
     # Parse the page content
