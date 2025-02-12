@@ -20,9 +20,17 @@ a about above after again against all am an and any are aren't as at be because 
 # Set time limit for execution
 start_time = time.time()
 TIME_LIMIT = 20  # Stop after 20 seconds
+TRAP_PATTERNS = [
+    r'\?sort=', r'\?order=', r'\?page=', r'\?date=', r'\?filter=', r'calendar', r'\?view=',
+    r'\?session=', r'\?print=', r'\?lang=', r'\?mode=', r'\?year=', r'\?month=', r'\?day='
+]
 
-
-
+def is_trap(url):
+    """Detects common crawler traps based on URL patterns."""
+    for pattern in TRAP_PATTERNS:
+        if re.search(pattern, url):
+            return True
+    return False
 
 def can_fetch(url):
     """Checks if the URL is allowed by robots.txt"""
@@ -36,9 +44,6 @@ def can_fetch(url):
 
     return robots_parsers[domain].can_fetch("*", url)
 
-
-
-
 def is_similar(text):
     """Checks if a page is too similar to previously crawled pages."""
     page_hash = make_simhash(text)
@@ -49,10 +54,6 @@ def is_similar(text):
     return False
 
 def scraper(url, resp):
-    """
-       Extracts valid URLs from the response, processes text content,
-       and tracks statistics for reporting.
-       """
     global longest_page
 
     if time.time() - start_time > TIME_LIMIT:
@@ -60,6 +61,10 @@ def scraper(url, resp):
         return []
 
     if resp.status != 200 or resp.raw_response is None:
+        return []
+
+    if is_trap(url):
+        print(f"Skipping potential crawler trap: {url}")
         return []
 
     # Parse the page content
@@ -92,6 +97,7 @@ def scraper(url, resp):
             url_queue.append(link)
 
     return valid_links
+
 
 def extract_next_links(url, soup):
     """Extracts and normalizes hyperlinks from the page."""
