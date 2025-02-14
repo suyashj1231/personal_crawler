@@ -62,58 +62,75 @@ def is_similar(text):
 def scraper(url, resp):
     global longest_page
 
+    # **1️⃣ Check robots.txt before crawling**
+    if not can_fetch(url):
+        print(f"Blocked by robots.txt: {url}")
+        return []
+
+    # Handle redirects (300-series status codes)
+    if 300 <= resp.status <= 399:
+        new_url = resp.raw_response.headers.get("Location")
+        if new_url:
+            print(f"Redirecting {url} → {new_url}")
+            return [new_url]  # Follow the redirect
+        else:
+            print(f"Skipping redirect without location: {url}")
+            return []
+
     if resp.status != 200 or resp.raw_response is None:
         return []
 
-    # Skip files larger than 1MB
+    # **2️⃣ Skip large files (>1MB)**
     if len(resp.raw_response.content) > MAX_PAGE_SIZE:
         print(f"Skipping large file (>1MB): {url}")
-        return[]
+        return []
 
     if is_trap(url):
         print(f"Skipping potential crawler trap: {url}")
         return []
 
-    # Parse the page content
+    # **3️⃣ Parse the page content**
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
     text_content = soup.get_text()
 
-    # *Check for similar pages BEFORE processing*
+    # **4️⃣ Check for duplicate content (SimHash)**
     if is_similar(text_content):
         print(f"Skipping duplicate page: {url}")
-        return []  # *Skip processing similar pages*
+        return []
 
+    # **5️⃣ Avoid low-content pages (<50 words)**
     word_count = len(text_content.split())
     if word_count < MIN_WORD_COUNT:
         print(f"Skipping low-content page (<50 words): {url}")
         return []
 
+    # **6️⃣ Process valid content**
     tokens = tokenize(text_content)
-    tokens = [word for word in tokens if word not in STOPWORDS]  # Remove stopwords
+    tokens = [word for word in tokens if word not in STOPWORDS]
     update_word_counts(tokens)
 
-    # Update longest page record
-    word_count = len(tokens)
+    # **7️⃣ Update longest page record**
     if word_count > longest_page[1]:
         longest_page = (url, word_count)
 
-    # Track unique pages and subdomains
+    # **8️⃣ Track unique pages and subdomains**
     track_unique_pages(url)
 
-    # Extract and validate links
+    # **9️⃣ Extract and validate links**
     links = extract_next_links(url, soup)
     valid_links = [link for link in links if is_valid(link)]
 
-    # Add new valid links to the queue
+    # **🔟 Add new valid links to the queue**
     for link in valid_links:
         if link not in visited_urls:
             visited_urls.add(link)
             url_queue.append(link)
 
-    # Save progress to log file after every page processed
+    # **📌 Save log after every processed page**
     save_log()
 
     return valid_links
+
 
 
 def extract_next_links(url, soup):
