@@ -7,7 +7,7 @@ from tokenizer import tokenize
 from collections import deque
 from simhash_basic import make_simhash, simhash_diff
 MIN_WORD_COUNT = 50
-MAX_PAGE_SIZE = 10_000_000
+MAX_PAGE_SIZE = 4_000_000
 # Global storage for tracking unique URLs, subdomains, and word frequency
 visited_urls = set()
 visited_hashes = set()
