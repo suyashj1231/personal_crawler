@@ -58,6 +58,7 @@ class Frontier(object):
         urlhash = get_urlhash(url)
         if urlhash not in self.save:
             self.save[urlhash] = (url, False)
+
             self.save.sync()
             self.to_be_downloaded.append(url)
     

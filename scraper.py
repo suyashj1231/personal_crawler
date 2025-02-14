@@ -1,4 +1,5 @@
 import re
+import json
 import urllib.robotparser
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
@@ -9,6 +10,7 @@ from simhash_basic import make_simhash, simhash_diff
 # Global storage for tracking unique URLs, subdomains, and word frequency
 visited_urls = set()
 visited_hashes = set()
+LOG_FILE = "crawler_log.json"
 subdomains = {}
 word_counts = {}
 longest_page = (None, 0)  # (URL, word count)
@@ -16,6 +18,17 @@ url_queue = deque()
 robots_parsers = {}
 STOPWORDS = set("""
 a about above after again against all am an and any are aren't as at be because been before being below between both but by can't cannot could couldn't did didn't do does doesn't doing don't down during each few for from further had hadn't has hasn't have haven't having he he'd he'll he's her here here's hers herself him himself his how how's i i'd i'll i'm i've if in into is isn't it it's its itself let's me more most mustn't my myself no nor not of off on once only or other ought our ours ourselves out over own same shan't she she'd she'll she's should shouldn't so some such than that that's the their theirs them themselves then there there's these they they'd they'll they're they've this those through to too under until up very was wasn't we we'd we'll we're we've were weren't what what's when when's where where's which while who who's whom why why's with won't would wouldn't you you'd you'll you're you've your yours yourself yourselves""".split())
+TRAP_PATTERNS = [
+    r'\?sort=', r'\?order=', r'\?page=', r'\?date=', r'\?filter=', r'calendar', r'\?view=',
+    r'\?session=', r'\?print=', r'\?lang=', r'\?mode=', r'\?year=', r'\?month=', r'\?day='
+]
+
+def is_trap(url):
+    """Detects common crawler traps based on URL patterns."""
+    for pattern in TRAP_PATTERNS:
+        if re.search(pattern, url):
+            return True
+    return False
 
 
 def can_fetch(url):
@@ -45,13 +58,18 @@ def scraper(url, resp):
     if resp.status != 200 or resp.raw_response is None:
         return []
 
+    if is_trap(url):
+        print(f"Skipping potential crawler trap: {url}")
+        return []
+
     # Parse the page content
     soup = BeautifulSoup(resp.raw_response.content, "html.parser")
     text_content = soup.get_text()
 
-    # Skip similar pages
+    # *Check for similar pages BEFORE processing*
     if is_similar(text_content):
-        return []
+        print(f"Skipping duplicate page: {url}")
+        return []  # *Skip processing similar pages*
 
     tokens = tokenize(text_content)
     tokens = [word for word in tokens if word not in STOPWORDS]  # Remove stopwords
@@ -72,7 +90,11 @@ def scraper(url, resp):
     # Add new valid links to the queue
     for link in valid_links:
         if link not in visited_urls:
+            visited_urls.add(link)
             url_queue.append(link)
+
+    # Save progress to log file after every page processed
+    save_log()
 
     return valid_links
 
@@ -86,22 +108,41 @@ def extract_next_links(url, soup):
     return links
 
 def is_valid(url):
-    """Determines whether a URL should be crawled."""
+    """Determines whether a URL should be crawled.
+
+    Only URLs that:
+      - Use the http or https scheme,
+      - Belong to one of the allowed domains:
+          *.ics.uci.edu, *.cs.uci.edu, *.informatics.uci.edu, *.stat.uci.edu,
+      - Do not point to files with disallowed extensions,
+    are considered valid.
+    """
     try:
         parsed = urlparse(url)
+        # Only accept http and https URLs
         if parsed.scheme not in {"http", "https"}:
             return False
-        return not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
-            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
+
+        # Only accept URLs within the allowed domains.
+        # This regex ensures that the netloc ends with one of the specified domains.
+        if not re.search(r"(ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu)$", parsed.netloc):
+            return False
+
+        # Exclude URLs with certain file extensions.
+        if re.match(
+                r".*\.(css|js|bmp|gif|jpe?g|ico"
+                + r"|png|tiff?|mid|mp2|mp3|mp4"
+                + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
+                + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+                + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
+                + r"|epub|dll|cnf|tgz|sha1"
+                + r"|thmx|mso|arff|rtf|jar|csv"
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower()):
+            return False
+
+        return True
     except TypeError:
-        print("TypeError for ", parsed)
+        print("TypeError for", parsed)
         raise
 
 def track_unique_pages(url):
@@ -125,6 +166,33 @@ def update_word_counts(tokens):
     for word in tokens:
         word_counts[word] = word_counts.get(word, 0) + 1
 
+
+def save_log():
+    """Saves the current state of the crawl to a log file."""
+    log_data = {
+        "visited_urls": list(visited_urls),
+        "word_counts": word_counts,
+        "subdomains": subdomains,
+        "longest_page": longest_page
+    }
+    with open(LOG_FILE, "w") as file:
+        json.dump(log_data, file)
+
+def load_log():
+    """Loads the previous crawl state from the log file if it exists."""
+    global visited_urls, word_counts, subdomains, longest_page
+    try:
+        with open(LOG_FILE, "r") as file:
+            log_data = json.load(file)
+            visited_urls = set(log_data["visited_urls"])
+            word_counts.update(log_data["word_counts"])
+            subdomains.update(log_data["subdomains"])
+            longest_page = tuple(log_data["longest_page"])
+            print("Previous crawl state loaded.")
+    except FileNotFoundError:
+        print("No previous log file found. Starting fresh crawl.")
+    except Exception as e:
+        print(f"Error loading log file: {e}")
 
 def get_report():
     """Generates final report for the crawler statistics and saves it to a file."""

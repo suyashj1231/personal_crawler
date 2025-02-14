@@ -20,10 +20,10 @@ class Worker(Thread):
         
     def run(self):
         while True:
-            if time.time() - self.start_time > self.TIME_LIMIT:
-                print("Worker time limit reached. Stopping crawler.")
-                scraper.get_report()
-                break
+            # if time.time() - self.start_time > self.TIME_LIMIT:
+            #     print("Worker time limit reached. Stopping crawler.")
+            #     scraper.get_report()
+            #     break
             tbd_url = self.frontier.get_tbd_url()
             if not tbd_url:
                 self.logger.info("Frontier is empty. Stopping Crawler.")

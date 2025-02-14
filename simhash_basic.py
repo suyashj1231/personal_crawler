@@ -1,7 +1,6 @@
 import re
 import hashlib
 
-
 def make_features(input_str, length=3):
     """Break the input string into features (shingles) of given length."""
     input_str = input_str.lower()
@@ -30,7 +29,6 @@ def make_simhash(input_str, hash_size=64):
     for i in range(hash_size):
         if v[i] > 0:
             simhash |= (1 << i)
-
     return simhash
 
 
