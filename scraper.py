@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from tokenizer import tokenize
 from collections import deque
 from simhash_basic import make_simhash, simhash_diff
+
+
 MIN_WORD_COUNT = 50
 MAX_PAGE_SIZE = 1 * 1024 * 1024  # 1MB = 1 * 1024 * 1024 bytes
 # Global storage for tracking unique URLs, subdomains, and word frequency
@@ -23,8 +25,10 @@ a about above after again against all am an and any are aren't as at be because 
 
 TRAP_PATTERNS = [
     r'\?sort=', r'\?order=', r'\?page=', r'\?date=', r'\?filter=', r'calendar', r'\?view=',
-    r'\?session=', r'\?print=', r'\?lang=', r'\?mode=', r'\?year=', r'\?month=', r'\?day=', r'\?.ical$'
+    r'\?session=', r'\?print=', r'\?lang=', r'\?mode=', r'\?year=', r'\?month=', r'\?day=',
+    r'\.ical$', r'\.ics$', r'doku\.php\?', r'\?do=media', r'\?tab_details=', r'\?tab_files='
 ]
+
 
 def is_trap(url):
     """Detects common crawler traps based on URL patterns."""
@@ -120,6 +124,7 @@ def extract_next_links(url, soup):
         absolute_url, _ = urldefrag(absolute_url) # no frag
         links.append(absolute_url)
     return links
+
 
 def is_valid(url):
     """Determines whether a URL should be crawled.
