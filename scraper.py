@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from tokenizer import tokenize
 from collections import deque
 from simhash_basic import make_simhash, simhash_diff
-
+import urllib.error
 
 MIN_WORD_COUNT = 50
 MAX_PAGE_SIZE = 1 * 1024 * 1024  # 1MB = 1 * 1024 * 1024 bytes
@@ -38,6 +38,8 @@ def is_trap(url):
     return False
 
 
+
+
 def can_fetch(url):
     """Checks if the URL is allowed by robots.txt"""
     parsed = urlparse(url)
@@ -46,9 +48,18 @@ def can_fetch(url):
     if domain not in robots_parsers:
         robots_parsers[domain] = urllib.robotparser.RobotFileParser()
         robots_parsers[domain].set_url(domain)
-        robots_parsers[domain].read()
+
+        try:
+            robots_parsers[domain].read()  # 🚀 **This is where the timeout happens**
+        except urllib.error.URLError as e:
+            print(f"⚠️ Failed to fetch robots.txt for {domain}: {e}")
+            return True  # **Allow crawling if robots.txt is unavailable**
+        except Exception as e:
+            print(f"⚠️ Unexpected error fetching robots.txt for {domain}: {e}")
+            return True  # **Allow crawling to continue**
 
     return robots_parsers[domain].can_fetch("*", url)
+
 
 def is_similar(text):
     """Checks if a page is too similar to previously crawled pages."""
