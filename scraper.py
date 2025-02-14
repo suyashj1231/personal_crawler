@@ -1,7 +1,7 @@
 import re
 import json
 import urllib.robotparser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urldefrag
 from bs4 import BeautifulSoup
 from tokenizer import compute_word_frequencies, tokenize
 from collections import deque
@@ -104,6 +104,7 @@ def extract_next_links(url, soup):
     links = []
     for tag in soup.find_all("a", href=True):
         absolute_url = urljoin(url, tag["href"])  # Convert to absolute URL
+        absolute_url, _ = urldefrag(absolute_url) # no frag
         links.append(absolute_url)
     return links
 

@@ -4,6 +4,7 @@ import shelve
 from threading import Thread, RLock
 from queue import Queue, Empty
 
+from future.backports.urllib.parse import urldefrag
 from utils import get_logger, get_urlhash, normalize
 from scraper import is_valid
 
@@ -54,6 +55,7 @@ class Frontier(object):
             return None
 
     def add_url(self, url):
+        url, _ = urldefrag(url) ## added to make sure no # are added to frontier
         url = normalize(url)
         urlhash = get_urlhash(url)
         if urlhash not in self.save:
