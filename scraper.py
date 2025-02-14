@@ -48,7 +48,6 @@ def can_fetch(url):
     if domain not in robots_parsers:
         robots_parsers[domain] = urllib.robotparser.RobotFileParser()
         robots_parsers[domain].set_url(domain)
-
         try:
             robots_parsers[domain].read()  # 🚀 **This is where the timeout happens**
         except urllib.error.URLError as e:
@@ -76,6 +75,10 @@ def scraper(url, resp):
     # **1️⃣ Check robots.txt before crawling**
     if not can_fetch(url):
         print(f"Blocked by robots.txt: {url}")
+        return []
+
+    if 600 <= resp.status < 700:
+        print(f"Skipping URL due to unknown 6XX error (status {resp.status}): {url}")
         return []
 
     # Handle redirects (300-series status codes)
@@ -187,7 +190,8 @@ def is_valid(url):
                 + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ical|djvu|apk|bak|tmp|jpg|jpeg|svg|pps)$",
                 parsed.path.lower()):
             return False
-
+        if parsed.path.count('/') > 10:
+            return False
         return True
     except TypeError:
         print("TypeError for", parsed)
