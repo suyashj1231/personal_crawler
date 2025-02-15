@@ -26,18 +26,29 @@ a about above after again against all am an and any are aren't as at be because 
 TRAP_PATTERNS = [
     r'\?sort=', r'\?order=', r'\?page=', r'\?date=', r'\?filter=', r'calendar', r'\?view=',
     r'\?session=', r'\?print=', r'\?lang=', r'\?mode=', r'\?year=', r'\?month=', r'\?day=',
-    r'\.ical$', r'\.ics$', r'doku\.php\?', r'\?do=media', r'\?tab_details=', r'\?tab_files='
+    r'\.ical$', r'\.ics$',
+    r'doku\.php',  # 🔹 **Now blocks ALL doku.php URLs, regardless of parameters**
+    r'\?do=media', r'\?tab_details=', r'\?tab_files=',
+    r'\?rev=',  # 🔹 **Blocks revision history pages**
+    r'&do=diff',  # 🔹 **Blocks version difference pages**
+    r'&do=edit',  # 🔹 **Blocks edit mode pages**
 ]
 
 
 def is_trap(url):
     """Detects common crawler traps based on URL patterns."""
+    parsed = urlparse(url)
+
+    # 🚀 **Prevent ALL doku.php URLs, even if they don’t have `?` parameters**
+    if "doku.php" in parsed.path:
+        return True
+
+    # Check trap patterns
     for pattern in TRAP_PATTERNS:
         if re.search(pattern, url):
             return True
+
     return False
-
-
 
 
 def can_fetch(url):
@@ -142,10 +153,7 @@ def scraper(url, resp):
 
     # **📌 Save log after every processed page**
     save_log()
-
     return valid_links
-
-
 
 def extract_next_links(url, soup):
     """Extracts and normalizes hyperlinks from the page."""
