@@ -24,15 +24,24 @@ STOPWORDS = set("""
 a about above after again against all am an and any are aren't as at be because been before being below between both but by can't cannot could couldn't did didn't do does doesn't doing don't down during each few for from further had hadn't has hasn't have haven't having he he'd he'll he's her here here's hers herself him himself his how how's i i'd i'll i'm i've if in into is isn't it it's its itself let's me more most mustn't my myself no nor not of off on once only or other ought our ours ourselves out over own same shan't she she'd she'll she's should shouldn't so some such than that that's the their theirs them themselves then there there's these they they'd they'll they're they've this those through to too under until up very was wasn't we we'd we'll we're we've were weren't what what's when when's where where's which while who who's whom why why's with won't would wouldn't you you'd you'll you're you've your yours yourself yourselves""".split())
 
 TRAP_PATTERNS = [
-    r'\?sort=', r'\?order=', r'\?page=', r'\?date=', r'\?filter=', r'calendar', r'\?view=',
-    r'\?session=', r'\?print=', r'\?lang=', r'\?mode=', r'\?year=', r'\?month=', r'\?day=',
-    r'\.ical$', r'\.ics$',
-    r'doku\.php',  # 🔹 **Now blocks ALL doku.php URLs, regardless of parameters**
+    r'\?sort=', r'\?order=', r'\?page=\d+',  # Blocks paginated URLs
+    r'\?date=', r'\?filter=', r'calendar', r'\?view=', r'\?session=',
+    r'\?print=', r'\?lang=', r'\?mode=', r'\?year=\d{4}', r'\?month=\d{1,2}', r'\?day=\d{1,2}',
+    r'\?tribe-bar-date=', r'outlook-ical=',  # Blocks infinite event/calendar URLs
+    r'\.ical$', r'\.ics$',  # Blocks iCalendar/ICS downloads
+    r'doku\.php',  # Blocks all doku.php pages (including media, edit, revisions)
     r'\?do=media', r'\?tab_details=', r'\?tab_files=',
-    r'\?rev=',  # 🔹 **Blocks revision history pages**
-    r'&do=diff',  # 🔹 **Blocks version difference pages**
-    r'&do=edit',  # 🔹 **Blocks edit mode pages**
+    r'\?rev=\d+',  # Blocks revision history pages
+    r'&do=diff',  # Blocks version difference pages
+    r'&do=edit',  # Blocks edit mode pages
+    r'&printable=yes',  # Blocks printable versions of pages
+    r'\?share=',  # Blocks unnecessary share links
+    r'\?replytocom=',  # Blocks duplicate comment links
+    r'\?fbclid=', r'utm_',  # Blocks tracking parameters (FB, Google Analytics)
+    r'\?redirect=',  # Blocks auto-redirects that could loop infinitely
+    r'\?attachment_id=',  # Blocks media attachment pages
 ]
+
 
 
 def is_trap(url):
