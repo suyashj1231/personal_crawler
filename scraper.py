@@ -209,7 +209,7 @@ def is_valid(url):
                 + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx"
                 + r"|data|dat|exe|bz2|tar|msi|bin|7z|dmg|iso"
                 + r"|epub|dll|cnf|tgz|sha1|thmx|mso|arff|rtf|jar|csv"
-                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ical|ppsx|mol)$",
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ical|ppsx|pps|mol)$",
                 parsed.path.lower()):
             return False
 
