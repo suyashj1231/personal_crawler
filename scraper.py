@@ -7,6 +7,8 @@ from tokenizer import tokenize
 from collections import deque
 from simhash_basic import make_simhash, simhash_diff
 import urllib.error
+from urllib.parse import parse_qs
+
 
 MIN_WORD_COUNT = 50
 MAX_PAGE_SIZE = 1 * 1024 * 1024  # 1MB = 1 * 1024 * 1024 bytes
@@ -179,37 +181,40 @@ def is_valid(url):
 
     Only URLs that:
       - Use the http or https scheme,
-      - Belong to one of the allowed domains:
-          *.ics.uci.edu, *.cs.uci.edu, *.informatics.uci.edu, *.stat.uci.edu,
+      - Belong to one of the allowed domains **(including subdomains)**,
       - Do not point to files with disallowed extensions,
     are considered valid.
     """
     try:
         parsed = urlparse(url)
-        # Only accept http and https URLs
+
+        # Only allow HTTP or HTTPS URLs
         if parsed.scheme not in {"http", "https"}:
             return False
 
-        # Only accept URLs within the allowed domains.
-        # This regex ensures that the netloc ends with one of the specified domains.
-        if not re.search(r"(ics\.uci\.edu|cs\.uci\.edu|informatics\.uci\.edu|stat\.uci\.edu)$", parsed.netloc):
+        # Ensure the URL belongs to allowed domains **(including subdomains)**
+        allowed_domains = [
+            ".ics.uci.edu",
+            ".cs.uci.edu",
+            ".informatics.uci.edu",
+            ".stat.uci.edu"
+        ]
+        if not any(parsed.netloc.endswith(domain) for domain in allowed_domains):
             return False
 
-        # Exclude URLs with certain file extensions.
+        # Exclude URLs with certain file extensions (non-crawlable resources)
         if re.match(
-                r".*\.(css|js|bmp|gif|jpe?g|ico"
-                + r"|png|tiff?|mid|mp2|mp3|mp4"
-                + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-                + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-                + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-                + r"|epub|dll|cnf|tgz|sha1"
-                + r"|thmx|mso|arff|rtf|jar|csv"
-                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ical|djvu|apk|bak|tmp|jpg|jpeg|svg|pps)$",
+                r".*\.(css|js|bmp|gif|jpg|jpeg|png|pdf|ico"
+                + r"|tiff?|mid|mp2|mp3|mp4|wav|avi|mov|mpeg|m4v|mkv|ogg|ogv"
+                + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx"
+                + r"|data|dat|exe|bz2|tar|msi|bin|7z|dmg|iso"
+                + r"|epub|dll|cnf|tgz|sha1|thmx|mso|arff|rtf|jar|csv"
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ical|ppsx|mol)$",
                 parsed.path.lower()):
             return False
-        if parsed.path.count('/') > 10:
-            return False
+
         return True
+
     except TypeError:
         print("TypeError for", parsed)
         raise
